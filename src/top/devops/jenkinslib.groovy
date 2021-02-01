@@ -1,4 +1,4 @@
-package top.devops
+package org.devops
 def PrintMes(content){
   println(content)
 }
