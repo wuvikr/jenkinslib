@@ -22,8 +22,9 @@ pipeline {
             steps{  //步骤
                 timeout(time:5, unit:"MINUTES"){   //步骤超时时间
                     script{ //填写运行代码
-                        println('获取代码')
-                        input id: 'Test', message: '是否要继续本次构建', ok: '是，我要继续', parameters: [choice(choices: ['a', 'b'], description: '', name: 'test')], submitter: 'admin'
+                        //println('获取代码')
+                        tools.PrintMes("获取代码!"，"green")
+                        //input id: 'Test', message: '是否要继续本次构建', ok: '是，我要继续', parameters: [choice(choices: ['a', 'b'], description: '', name: 'test')], submitter: 'admin'
                         sh "whoami"
                     }
                 }
@@ -35,7 +36,8 @@ pipeline {
             steps{
                 timeout(time:20, unit:"MINUTES"){
                     script{
-                        println('应用打包')
+                        //println('应用打包')
+                        tools.PrintMes("应用打包!"，"green")
                     }
                 }
             }
@@ -46,8 +48,8 @@ pipeline {
             steps{
                 timeout(time:30, unit:"MINUTES"){
                     script{
-                        print("代码扫描")
-                        tools.PrintMes("This is my lib!"，"green")
+                        //print("代码扫描")
+                        tools.PrintMes("代码扫描!"，"green")
                     }
                 }
             }
