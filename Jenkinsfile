@@ -8,10 +8,6 @@ def tools = new org.devops.tools()
 //Pipeline
 pipeline {
     agent any
-
-    tools {
-        maven 'm3'
-    }
     
     options {
         timestamps()  //日志会有时间
@@ -31,7 +27,6 @@ pipeline {
                         sh "whoami"
                     }
                 }
-                sh 'mvn --version'
             }
         }
         
@@ -41,9 +36,6 @@ pipeline {
                 timeout(time:20, unit:"MINUTES"){
                     script{
                         println('应用打包')
-                        mvnHome = tool 'm3'
-                        println(mvnHome)
-                        
                     }
                 }
             }
