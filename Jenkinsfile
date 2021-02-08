@@ -1,16 +1,13 @@
 #!groovy
 @Library('jenkinslib') _
 
-def tools = new org.devops.jenkinslib()
+def tools = new org.devops.tools()
 
-String workspace = "/opt/jenkins/workspace"
+//String workspace = "/opt/jenkins/workspace"
 
 //Pipeline
 pipeline {
-    agent { node {  label "master"   //指定运行节点的标签或者名称
-                    customWorkspace "${workspace}"   //指定运行工作目录（可选）
-            }
-    }
+    agent any
 
     tools {
         maven 'm3'
@@ -31,21 +28,10 @@ pipeline {
                     script{ //填写运行代码
                         println('获取代码')
                         input id: 'Test', message: '是否要继续本次构建', ok: '是，我要继续', parameters: [choice(choices: ['a', 'b'], description: '', name: 'test')], submitter: 'admin'
+                        sh "whoami"
                     }
                 }
                 sh 'mvn --version'
-            }
-        }
-        
-        stage('Example') {
-            when { environment name: 'test-str', value: '1234'}
-
-            //局部变量
-            environment { 
-                a = 'bbccd'
-            }
-            steps {
-                sh 'printenv'
             }
         }
         
@@ -70,7 +56,7 @@ pipeline {
                     script{
                         print("代码扫描")
                         
-                        tools.PrintMes("This is my lib!")
+                        //tools.PrintMes("This is my lib!")
                     }
                 }
             }
