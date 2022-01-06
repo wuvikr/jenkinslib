@@ -1,19 +1,52 @@
 package org.devops
 
-//构建
-def Build(buildType,buildShell){
-    def buildTool = ["mvn":"m3","ant":"ant","gradle":"gradle","npm":"node"]
+//Maven
+def MavenBuild(){
+    sh "mvn clean package -DskipTests -s settings.xml"
+}
 
-    buildHome = tool buildTool[buildType]
-    
-    if ("${buildType}" == "npm"){
-        sh  """
-            export NODE_HOME=${buildHome}
-            export PATH=\${NODE_HOME}/bin:\$PATH
-            ${buildHome}/bin/${buildType} ${buildShell}
-            """
-    }
-    else {
-        sh "${buildHome}/bin/${buildType} ${buildShell}"
+//Gradle
+def GradleBuild(){
+   sh "gradle build -x test"
+}
+
+//Ant
+def AntBuild(configPath="./build.xml"){
+    sh "ant -f ${configPath}"
+}
+
+//Golang
+def GoBuild(){
+    sh " go build demo.go"
+}
+
+//Npm
+def NpmBuild(){
+    sh "npm install && npm run build"
+}
+
+//Yarn
+def YarnBuild(){
+    sh "yarn install && yarn build "
+}
+
+//Main
+def CodeBuild(type){
+    switch(type){
+        case "maven":
+            MavenBuild()
+            break;
+        case "gradle":
+            GradleBuild()
+            break;
+        case "npm":
+            NpmBuild()
+            break;
+        case "yarn":
+            YarnBuild()
+            break;
+        default:
+            error "No such tools ... [maven/ant/gradle/npm/yarn/go]"
+            break
     }
 }
