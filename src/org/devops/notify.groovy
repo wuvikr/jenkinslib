@@ -9,7 +9,7 @@ def weixin() {
         env.BUILD_USER = "admin"
     }
     sh """
-        curl --location --request POST 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=c65378cd-ed3b-4dab-8543-c108df256971' \
+        curl --location --request POST 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=eddfgdso-ed3b-4dab-8543-c108df256971' \
         --header 'Content-Type: application/json' \
         --data '{
             "msgtype": "markdown",
