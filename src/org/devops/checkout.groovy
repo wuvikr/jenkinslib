@@ -6,6 +6,6 @@ package org.devops
             branches: [[name: branchName]], 
             extensions: [], 
             userRemoteConfigs: [[
-            credentialsId: '7eaa6c7f-f954-4a65-bcd7-15f27edb680b', 
+            credentialsId: 'gitlab-wvuikr', 
             url: srcUrl]]])
 }
