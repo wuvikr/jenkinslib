@@ -9,6 +9,32 @@ def tools = new Tools()
 env.buName = "${env.JOB_BASE_NAME}".split("-")[0]
 env.serviceName = "${env.JOB_BASE_NAME}".split("-")[1]
 
+properties([parameters([
+             [$class: 'CascadeChoiceParameter',
+               choiceType: 'PT_SINGLE_SELECT',
+               description: '请选择需要部署的主机：',
+               filterLength: 1,
+               filterable: false,
+               name: 'CLUSTER',
+               referencedParameters: 'ENVIRONMENT',
+               script: [$class: 'GroovyScript',
+                         fallbackScript:[classpath: [], sandbox: false, script: ''],
+                         script: [classpath: [], sandbox: false,
+                                  script: '''if ( ENVIRONMENT == "DEV" ) {
+                                                 return [\'10.0.0.203\', \'10.0.0.204\']
+                                             }
+                                             else if (ENVIRONMENT == "QA") {
+                                                 return [\'10.0.1.101\', \'10.0.1.102\']
+                                             }
+                                             else if ( ENVIRONMENT.equals("PROD")) {
+                                                 return [\'10.0.224.201\', \'10.0.224.202\', \'10.0.224.203\']
+                                             }'''
+                                 ]
+                         ]
+             ]
+            ])
+])
+
 //Pipeline
 pipeline {
     agent { label 'build01' }
@@ -26,6 +52,7 @@ pipeline {
     parameters {
         string description: '请填写发布版本分支：', name: 'version', defaultValue: 'main'
         string description: '请填写要部署的artifact名称：', name: 'artifactiName', defaultValue: ''
+        choice choices: ['DEV', 'QA', 'PROD'], description: '请选择要部署的环境：', name: 'ENVIRONMENT'
     }
 
     stages {
