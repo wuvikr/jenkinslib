@@ -6,9 +6,7 @@ def tools = new Tools()
 def git = new Git()
 def build = new Build()
 def sast = new Sast()
-
-
-//String workspace = "/opt/jenkins/workspace"
+def artifact = new Artifacts()
 
 //Pipeline
 pipeline {
@@ -26,15 +24,15 @@ pipeline {
     }
 
     parameters {
-        string description: '请填写项目仓库地址：', name: 'gitURL', defaultValue: ''
-        string description: '请填写项目分支：', name: 'branchName', defaultValue: ''
+        string description: '请填写项目仓库地址：', name: 'gitURL', defaultValue: 'http://gitlab.wuvikr.top/mytest/webdemo.git'
+        string description: '请填写项目分支：', name: 'branchName', defaultValue: 'main'
         booleanParam description: '是否使用sonar进行代码扫描？（默认：false）', name: 'sonarScan'
     }
 
     stages {
-        //下载代码
-        stage("GetCode"){ //阶段名称
-            steps{  //步骤
+        // 下载代码
+        stage("GetCode"){
+            steps{
                 timeout(time:5, unit:"MINUTES"){
                     script{
                         tools.PrintMes("获取代码!","green")
@@ -43,8 +41,19 @@ pipeline {
                 }
             }
         }
+
+        // 定义全局变量
+        stage("define var"){
+            steps{
+                script{
+                    env.buName = "${env.JOB_BASE_NAME}".split("-")[0]
+                    env.serviceName = "${env.JOB_BASE_NAME}".split("-")[1]
+                    env.commitID = sh(returnStdout: true, script: "git rev-parse HEAD").trim().take(7)
+                }
+            }
+        }
         
-        //构建
+        // 构建
         stage("Build"){
             steps{
                 timeout(time:20, unit:"MINUTES"){
@@ -68,6 +77,18 @@ pipeline {
                 }
             }
         }
+
+        //上传制品
+        stage("uploadArtifact"){
+            steps{
+                script{
+                    tools.PrintMes("上传制品!","green")
+                    artifact.UploadArtifact()
+                }
+                
+            }
+        }
+
     }
 
     //构建后操作
@@ -76,12 +97,20 @@ pipeline {
             script{
                 println("delete Dir")
                 //deleteDir()
+                currentBuild.displayName = "${env.serviceName}-${env.commitID}-${env.BUILD_NUMBER}"
+                
             }
         }
 
         success {
             script{
-                currentBuild.description = "\n 构建成功!" 
+                wrap([$class: 'BuildUser']){
+                    //echo "full name is $BUILD_USER"
+                    //echo "user id is $BUILD_USER_ID"
+                    //echo "user email is $BUILD_USER_EMAIL"
+                    //echo "user group is $BUILD_USER_GROUPS"
+                    currentBuild.description = "构建成功! \nbuildUser: ${BUILD_USER} \nbranchName: ${params.branchName}" 
+                }
             }
         }
 
