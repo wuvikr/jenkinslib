@@ -1,5 +1,5 @@
 #!groovy
-@Library('jenkins_lib') _
+@Library('sharable-lib-github') _
 import org.devops.*
 
 def tools = new Tools()
@@ -31,10 +31,10 @@ pipeline {
 
     stages {
         // 下载代码
-        stage("GetCode"){
-            steps{
-                timeout(time:5, unit:"MINUTES"){
-                    script{
+        stage("GetCode") {
+            steps {
+                timeout(time:5, unit:"MINUTES") {
+                    script {
                         tools.PrintMes("获取代码!","green")
                         git.GetCode(gitURL,branchName)
                     }
@@ -43,9 +43,9 @@ pipeline {
         }
 
         // 定义全局变量
-        stage("define var"){
-            steps{
-                script{
+        stage("define var") {
+            steps {
+                script {
                     env.buName = "${env.JOB_BASE_NAME}".split("-")[0]
                     env.serviceName = "${env.JOB_BASE_NAME}".split("-")[1]
                     env.commitID = sh(returnStdout: true, script: "git rev-parse HEAD").trim().take(7)
@@ -55,9 +55,9 @@ pipeline {
         
         // 构建
         stage("Build"){
-            steps{
-                timeout(time:20, unit:"MINUTES"){
-                    script{
+            steps {
+                timeout(time:20, unit:"MINUTES") {
+                    script {
                         tools.PrintMes("应用打包!","green")
                         build.CodeBuild("maven")
                     }
@@ -68,9 +68,9 @@ pipeline {
         //代码扫描
         stage("CodeScan"){
             when { environment name: 'sonarScan', value: 'true' }
-            steps{
-                timeout(time:20, unit:"MINUTES"){
-                    script{
+            steps {
+                timeout(time:20, unit:"MINUTES") {
+                    script {
                         tools.PrintMes("代码扫描!","green")
                         sast.SonarScanner()
                     }
@@ -79,9 +79,9 @@ pipeline {
         }
 
         //上传制品
-        stage("uploadArtifact"){
-            steps{
-                script{
+        stage("uploadArtifact") {
+            steps {
+                script {
                     tools.PrintMes("上传制品!","green")
                     artifact.UploadArtifact()
                 }
@@ -94,7 +94,7 @@ pipeline {
     //构建后操作
     post {
         always {
-            script{
+            script {
                 println("delete Dir")
                 //deleteDir()
                 currentBuild.displayName = "${env.serviceName}-${env.commitID}-${env.BUILD_NUMBER}"
@@ -103,7 +103,7 @@ pipeline {
         }
 
         success {
-            script{
+            script {
                 wrap([$class: 'BuildUser']){
                     //echo "full name is $BUILD_USER"
                     //echo "user id is $BUILD_USER_ID"
@@ -115,13 +115,13 @@ pipeline {
         }
 
         failure {
-            script{
+            script {
                 currentBuild.description = "\n 构建失败!" 
             }
         }
 
         aborted {
-            script{
+            script {
                 currentBuild.description = "\n 构建取消!" 
             }
         }
