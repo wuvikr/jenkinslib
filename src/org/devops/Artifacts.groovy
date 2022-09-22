@@ -47,7 +47,7 @@ def UploadArtifact() {
 def DownloadArtifact() {
     repositoryUrl = 'http://10.0.0.204:8081/repository/devops-artifact/'
 
-    urlPath = "${env.buName}/${env.serviceName}/${params.version}/${params.artifactiName}"
+    urlPath = "${buName}/${serviceName}/${params.version}/${params.artifactiName}"
 
     requestUrl = repositoryUrl + urlPath
 
