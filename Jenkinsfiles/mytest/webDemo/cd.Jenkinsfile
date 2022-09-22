@@ -1,13 +1,9 @@
 #!groovy
-@Library('jenkins_lib') _
+@Library('sharable-lib-github') _
 import org.devops.*
 
 def artifact = new Artifacts()
 def tools = new Tools()
-
-//定义全局变量
-env.buName = "${env.JOB_BASE_NAME}".split("-")[0]
-env.serviceName = "${env.JOB_BASE_NAME}".split("-")[1]
 
 properties([parameters([
              [$class: 'CascadeChoiceParameter',
@@ -37,7 +33,7 @@ properties([parameters([
 
 //Pipeline
 pipeline {
-    agent { label 'build01' }
+  agent { label 'build01' }
     
     options {
         timestamps()                        //日志会有时间
@@ -56,6 +52,16 @@ pipeline {
     }
 
     stages {
+        // 定义变量
+        stage('Define Variable') {
+            steps {
+                script {
+                    buName = "${env.JOB_BASE_NAME}".split("-")[0]
+                    serviceName = "${env.JOB_BASE_NAME}".split("-")[1]
+                }  
+            }
+        }
+        
         // 下载制品
         stage("DownloadArtifact"){
             steps{
