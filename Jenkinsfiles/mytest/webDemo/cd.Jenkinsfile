@@ -1,35 +1,20 @@
 #!groovy
-@Library('sharable-lib-github') _
+@Library('sharable-lib-gitee') _
 import org.devops.*
 
 def artifact = new Artifacts()
 def tools = new Tools()
 
-properties([parameters([
-             [$class: 'CascadeChoiceParameter',
-               choiceType: 'PT_SINGLE_SELECT',
-               description: '请选择需要部署的主机：',
-               filterLength: 1,
-               filterable: false,
-               name: 'CLUSTER',
-               referencedParameters: 'ENVIRONMENT',
-               script: [$class: 'GroovyScript',
-                         fallbackScript:[classpath: [], sandbox: false, script: ''],
-                         script: [classpath: [], sandbox: false,
-                                  script: '''if ( ENVIRONMENT == "DEV" ) {
-                                                 return [\'10.0.0.203\', \'10.0.0.204\']
-                                             }
-                                             else if (ENVIRONMENT == "QA") {
-                                                 return [\'10.0.1.101\', \'10.0.1.102\']
-                                             }
-                                             else if ( ENVIRONMENT.equals("PROD")) {
-                                                 return [\'10.0.224.201\', \'10.0.224.202\', \'10.0.224.203\']
-                                             }'''
-                                 ]
-                         ]
-             ]
-            ])
-])
+properties([parameters([[$class: 'CascadeChoiceParameter', choiceType: 'PT_CHECKBOX', filterLength: 1, filterable: false, name: 'HOSTS', randomName: 'choice-parameter-302444359802368', referencedParameters: 'ENVIRONMENT', script: [$class: 'GroovyScript', fallbackScript: [classpath: [], oldScript: '', sandbox: false, script: ''], script: [classpath: [], oldScript: '', sandbox: false, script: '''if ( ENVIRONMENT == "DEV" ) {
+    return [\'10.0.0.203\', \'10.0.0.204\']
+}
+else if (ENVIRONMENT == "QA") {
+    return [\'10.0.1.101\', \'10.0.1.102\']
+}
+else if ( ENVIRONMENT.equals("PROD")) {
+    return [\'10.0.224.201\', \'10.0.224.202\', \'10.0.224.203\']
+}''']]]])])
+
 
 //Pipeline
 pipeline {
@@ -47,7 +32,7 @@ pipeline {
 
     parameters {
         string description: '请填写发布版本分支：', name: 'version', defaultValue: 'main'
-        string description: '请填写要部署的artifact名称：', name: 'artifactiName', defaultValue: ''
+        string description: '请填写要部署的artifact名称：(例如：webDemo-e7e25b5-14.jar)', name: 'artifactiName', defaultValue: ''
         choice choices: ['DEV', 'QA', 'PROD'], description: '请选择要部署的环境：', name: 'ENVIRONMENT'
     }
 
@@ -70,7 +55,7 @@ pipeline {
 
                     //nexus下载链接示例：http://10.0.0.204:8081/repository/devops-artifact/mytest/webDemo/main/webDemo-e7e25b5-14.jar
                     urlPath = "${buName}/${serviceName}/${params.version}/${params.artifactiName}"
-                    
+
                     artifact.DownloadArtifact(urlPath)
                 }
             }
