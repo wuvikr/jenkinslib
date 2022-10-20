@@ -67,7 +67,11 @@ pipeline {
             steps{
                 script{
                     tools.PrintMes("获取制品!","green")
-                    artifact.DownloadArtifact()
+
+                    //nexus下载链接示例：http://10.0.0.204:8081/repository/devops-artifact/mytest/webDemo/main/webDemo-e7e25b5-14.jar
+                    urlPath = "${buName}/${serviceName}/${params.version}/${params.artifactiName}"
+                    
+                    artifact.DownloadArtifact(urlPath)
                 }
             }
         }
