@@ -1,5 +1,5 @@
 #!groovy
-@Library('sharable-lib-gitee') _
+@Library('sharable-lib-github') _
 import org.devops.*
 
 def artifact = new Artifacts()
