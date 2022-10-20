@@ -6,9 +6,7 @@ def tools = new Tools()
 def git = new Git()
 def build = new Build()
 def sast = new Sast()
-
-
-//String workspace = "/opt/jenkins/workspace"
+def artifact = new Artifacts()
 
 //Pipeline
 pipeline {
@@ -26,10 +24,11 @@ pipeline {
     }
 
     parameters {
-        string description: '请填写项目仓库地址：', name: 'gitURL', defaultValue: ''
-        string description: '请填写项目分支：', name: 'branchName', defaultValue: ''
+        string description: '请填写项目仓库地址：', name: 'gitURL', defaultValue: 'http://gitlab.wuvikr.top/devops/demo-java-helloworld.git'
+        string description: '请选择项目分支：', name: 'branchName', defaultValue: 'main'
         booleanParam description: '是否使用sonar进行代码扫描？（默认：false）', name: 'sonarScan'
     }
+
 
     stages {
         //下载代码
@@ -38,7 +37,7 @@ pipeline {
                 timeout(time:5, unit:"MINUTES"){
                     script{
                         tools.PrintMes("获取代码!","green")
-                        git.GetCode(gitURL,branchName)
+                        checkout.GetCode(gitURL,branchName)
                     }
                 }
             }
@@ -68,6 +67,17 @@ pipeline {
                 }
             }
         }
+
+        //上传制品
+        stage("uploadArtifact"){
+            steps{
+                script{
+                    tools.PrintMes("上传制品!","green")
+                    artifact.upload()
+                }
+                
+            }
+        }
     }
 
     //构建后操作
@@ -81,19 +91,19 @@ pipeline {
 
         success {
             script{
-                currentBuild.description = "\n 构建成功!" 
+                currentBuild.description = "\n 上传制品成功!" 
             }
         }
 
         failure {
             script{
-                currentBuild.description = "\n 构建失败!" 
+                currentBuild.description = "\n 上传制品失败!" 
             }
         }
 
         aborted {
             script{
-                currentBuild.description = "\n 构建取消!" 
+                currentBuild.description = "\n 上传制品取消!" 
             }
         }
     }

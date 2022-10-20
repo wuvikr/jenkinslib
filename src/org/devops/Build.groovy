@@ -2,7 +2,8 @@ package org.devops
 
 //Maven
 def MavenBuild(){
-    sh "mvn clean package -DskipTests -s settings.xml"
+    //sh "mvn clean package -DskipTests -s settings.xml"
+    sh "mvn clean package -DskipTests"
 }
 
 //Gradle
