@@ -1,0 +1,197 @@
+@Library('platform-pipeline-library') _
+
+DOCKER_REGISTRY_HOST_NAME = "ociocorpcommsnpregistry.azurecr.io"
+DOCKER_REGISTRY_CREDIENTIAL_ID = "acr"
+
+GIT_REGISTRY = ""
+GIT_BRANCH_URI = ""
+GIT_COMMIT_URI = ""
+
+PLATFORM_INFO_GIT_REGISTRY = "github.corp.ebay.com/ocio-hubxsh/SecurePipeline-Build-Info.git"
+
+
+APP_NAME = 'pplx'
+COMP_NAME = 'app'
+
+
+IMAGE_URI = ""
+
+
+switch ( ENVIRONMENT ) {
+    case "dev1":
+        CLUSTER = ['dev-aks']
+        break
+    case "dev2":
+        CLUSTER = ['dev-aks']
+        break
+    case "dev3":
+        CLUSTER = ['dev-aks']
+        break
+    case "dev4":
+        CLUSTER = ['dev-aks']
+        break
+}
+
+ 
+pipeline {
+    agent {label 'jenkins-agent'}
+    options { timestamps () }
+
+    environment {
+        CHANNEL = '#build-notification-pplx'
+        PATH = "/var/lib/fortify/bin:$PATH"
+        MAVEN_OPTS = '-Xms256m -Xmx1024m'
+    }
+
+    parameters {
+        choice choices: ['app-service'], description: 'select project：', name: 'APPLICATION'
+        choice choices: ['dev1', 'dev2', 'dev3', 'dev4'], description: 'BUILD and DEPLOYMENT environment dev(n)', name: 'ENVIRONMENT'
+        string defaultValue: 'main', description: 'Replace the branch name:', name: 'BRANCH'
+        string defaultValue: 'https://github.corp.ebay.com/PeopleX/feed-job', description: 'To run your fork, enter your git url:', name: 'GIT_REGISTRY'
+        booleanParam description: 'Whether to enable code scanning？', defaultValue: false, name: 'SASTFE_CODE_ANALYSIS'
+        booleanParam description: 'Unit test for the repo if there is unit test code.', defaultValue: false, name: 'UNITTEST'
+        choice choices: ['ebay_openjdk11'], description: 'Select an analyzer to check the static codes.', name: 'COMPILE_SOURCE'
+    }
+
+    stages {
+        
+        stage('Git Checkout') {
+            steps {
+                script{
+                    wrap([$class: 'BuildUser']) {
+                        BUILD_USER_ID="${BUILD_USER_ID}"
+                    }
+                    git branch: '$BRANCH', credentialsId: 'github_bot_access', url: '$GIT_REGISTRY'
+                    
+                }
+            }
+        }
+        
+        stage('Define variable') {
+            steps {
+                script{
+                    wrap([$class: 'BuildUser']) {
+                        BUILD_USER_ID="${BUILD_USER_ID}"
+                    }
+
+                    def COMMIT_HASH = sh(returnStdout: true, script: 'git rev-parse HEAD').trim().take(7)
+                    def now = new Date()
+                    def DATE = now.format("yyyyMMdd", TimeZone.getTimeZone('UTC'))
+                    def BRANCH_MOD = BRANCH.replaceAll(/\//,'_').replaceAll(/\./,'_')
+                    def IMAGE_TAG="${APP_NAME}/${COMP_NAME}:${BRANCH_MOD}.${COMMIT_HASH}.${DATE}.${BUILD_NUMBER}"
+                    IMAGE_URI="${DOCKER_REGISTRY_HOST_NAME}/${IMAGE_TAG}"
+                    // ociocorpcommsnpregistry.azurecr.io/pplx/app:pplx_services_new_ui_to_classification_koyu.6b02951.20230424.39
+                    // for jenkins to display build name
+                    currentBuild.displayName = "${BUILD_NUMBER} ${APPLICATION} - ${ENVIRONMENT}"
+                    echo "image uri: ${IMAGE_URI}"
+                }
+            }
+        }
+        
+        /*
+        stage('Compile') {
+            tools {
+                jdk "ebayopenJDK-11.0.3"
+                maven "apache-maven-3.6.2"
+            }
+            steps{
+                script {
+                    if ("${params.UNITTEST}" == false) {
+                        sh "mvn -X -DskipTests=true clean -Dmaven.javadoc.skip=true install"
+                    }
+                    else {
+                        sh "mvn clean install"
+                    }
+                }
+            }
+        }
+        */
+        
+        stage('Secure Scan') {
+            when { environment name: 'SASTFE_CODE_ANALYSIS', value: 'true' }
+            steps{
+                timeout(time: 60, unit: 'MINUTES') {
+                    script {
+                        SAST_URI = sastfe([
+                            "tool"             : "sastfe",
+                            "OWNER_EMAIL"      : "${BUILD_USER_ID}",
+                            "GIT_URL"          : "${GIT_REGISTRY}",
+                            "BRANCH"           : "${BRANCH}",
+                            "COMMIT_ID"        : "${COMMIT_ID}",
+                            "CHANNEL"          : "${CHANNEL}"
+                        ])
+
+                        if(currentBuild.result == 'FAILURE') {
+                            error('SAST has failed.')
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Image') {
+            steps{
+                script{
+                    docker.withRegistry("https://${DOCKER_REGISTRY_HOST_NAME}", "${DOCKER_REGISTRY_CREDIENTIAL_ID}") {
+                        def image = docker.build("${IMAGE_URI}", "--naework=host", "-f ./Dockerfile --force-rm .")
+                        image.push()
+                    }
+                }
+            }
+        }
+
+
+        stage('Deloy') {
+             steps{
+                 script{
+                     k8sControl([
+                         "tool"              :   "kubectl",
+                         "command"           :   "setImageName",
+                         "environment"       :   "${ENVIRONMENT}",
+                         "cluster"           :   "${CLUSTER}",
+                         "channel"           :   "${CHANNEL}",
+                         "builduser"         :   "${BUILD_USER_ID}",
+                         "application"       :   "${APP_NAME}",
+                         "component"         :   "${COMP_NAME}",
+                         "image"             :   "${IMAGE_URI}"
+                     ])
+                 }
+             }
+         }
+
+    }
+
+
+    post { 
+        always { 
+            script{
+                duration = String.format("%.2f",(currentBuild.duration/60000).toFloat())
+            }
+            deleteDir()
+        }
+        failure{
+            sendNotify([
+                "method"            :   "slack",
+                "status"            :   "failure",
+                "environment"       :   "${ENVIRONMENT}",
+                "channel"           :   "${CHANNEL}",
+                "builduser"         :   "${BUILD_USER_ID}",
+                "buildnum"          :   "${BUILD_NUMBER}",
+                "application"       :   "${APPLICATION}",
+                "environment"       :   "${ENVIRONMENT}",
+                "duration"          :   "${duration}",
+                "image"             :   "${IMAGE_URI}",
+                "sast"              :   "${SAST_URI}",
+                "unit"              :   "${UNIT_URI}",
+                "jenkinsurl"        :   "${RUN_DISPLAY_URL}"
+            ])              
+        }
+        success{
+            slackSend botUser: true, channel: nData['channel'],  tokenCredentialId: "xxxxxxx-Token", color: "good", message: "xxxxxxx"            
+        }
+        aborted{
+            slackSend botUser: true, channel: nData['channel'],  tokenCredentialId: "xxxxxxx-Token", color: "good", message: "xxxxxxx"
+           
+        }
+    }
+}
