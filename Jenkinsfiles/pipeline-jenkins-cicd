@@ -1,13 +1,13 @@
 @Library('platform-pipeline-library') _
 
-DOCKER_REGISTRY_HOST_NAME = "ociocorpcommsnpregistry.azurecr.io"
-DOCKER_REGISTRY_CREDIENTIAL_ID = "acr"
+DOCKER_REGISTRY_HOST_NAME = "xxx.azurecr.io"
+DOCKER_REGISTRY_CREDIENTIAL_ID = "azure-repository"
 
 GIT_REGISTRY = ""
 GIT_BRANCH_URI = ""
 GIT_COMMIT_URI = ""
 
-PLATFORM_INFO_GIT_REGISTRY = "github.corp.ebay.com/ocio-hubxsh/SecurePipeline-Build-Info.git"
+PLATFORM_INFO_GIT_REGISTRY = "xxxxxxxxx.git"
 
 
 APP_NAME = 'pplx'
